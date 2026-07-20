@@ -84,8 +84,13 @@ scan mode.
 zero-network PowerShell capture tool to hand to someone who *has* a Secured-core laptop. It
 dumps DeviceGuard/DRTM state + TPM + **raw measured-boot WBCL event logs (base64)** + Secure
 Boot vars into two files. That gives real DRTM event-log data to develop the parser +
-PCR-reconstruction offline, without a Secured-core box on hand. First deliverable of Phase 2
-is to decode those WBCL logs and build the event-log parser against them.
+PCR-reconstruction offline, without a Secured-core box on hand.
+
+**Phase 2 parser: DONE.** `attest/tcglog.py` parses the crypto-agile TCG/WBCL event log
+and reconstructs PCR values (the R2 event-log cross-check). Validated against a real 93 KB
+WBCL log (36 events, 0 trailing bytes) + deterministic tests in `tests/test_tcglog.py`
+(PCR extend math checked vs hashlib). Handles any PCR incl. DRTM 17-22. `python -m attest
+<log|collector.json>` decodes + prints. Remaining Phase 2 work below (quote + corpus match).
 
 Tasks:
 - Wrap **go-tpm-tools / go-attestation** (Go sidecar invoked from Python, or port the flow):
