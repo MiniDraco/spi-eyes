@@ -21,7 +21,7 @@ conversation can pick it up.
 
 ## Current state
 - **Phase 1a — Capability Probe: DONE.** `capability_probe/` runs read-only, no driver,
-  emits the evidence ceiling + JSON artifact. Verified on host `Petra` (ceiling =
+  emits the evidence ceiling + JSON artifact. Verified on the dev box (ceiling =
   CANNOT-VERIFY; no DRTM). Files: `model.py`, `winutil.py`, `probes.py`, `aggregate.py`,
   `__main__.py`.
 
@@ -34,7 +34,7 @@ with no kernel driver. This is the shippable "everyman" product (WHITEPAPER R6).
 Tasks:
 - **Self-elevation / manifest.** Detect non-admin (done) and offer a one-click elevated
   re-launch (`Start-Process -Verb RunAs`), or ship a `.cmd` wrapper. Elevated run must
-  resolve the TPM / Secure Boot / dbx `NOT-ASSESSED` cases seen on `Petra`.
+  resolve the TPM / Secure Boot / dbx `NOT-ASSESSED` cases seen on the dev box.
 - **TPM depth.** Real TPM 2.0 confirmation, manufacturer (fTPM vs dTPM → interposer-risk
   note), PCR bank availability. Read the TCG event log via TBS (`Tbsi_Get_TCG_Log_Ex`) or
   parse `C:\Windows\Logs\MeasuredBoot\*.log`; report whether an event-log cross-check is
@@ -53,7 +53,7 @@ Tasks:
   for ME version → flag downgrade below INTEL-SA-00086 fix. AMD PSP is harder without a driver;
   note as NOT-ASSESSED.
 
-**Acceptance:** elevated run on `Petra` returns real TPM + Secure Boot + dbx verdicts;
+**Acceptance:** elevated run on the dev box returns real TPM + Secure Boot + dbx verdicts;
 dbx report names specific missing revocations; HPA/DCO assessed when smartmontools present.
 Add `tests/` with a fixture-driven test of `_parse_efi_sig_lists` and the aggregator lattice.
 
@@ -78,7 +78,7 @@ scan mode.
 
 ## Phase 2 — The earned-CLEAN engine (DRTM quote path)  [needs DRTM-capable hardware]
 **Goal:** make `CLEAN (Above-SMM)` real. This is the core research contribution in code.
-**Blocker:** `Petra` has no DRTM. Need a Secured-core / System-Guard-capable laptop to develop.
+**Blocker:** the dev box has no DRTM. Need a Secured-core / System-Guard-capable laptop to develop.
 
 **UNBLOCK (built):** `collector/Collect-FirmwareAttestation.ps1` — a standalone, read-only,
 zero-network PowerShell capture tool to hand to someone who *has* a Secured-core laptop. It

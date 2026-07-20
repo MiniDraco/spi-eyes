@@ -37,7 +37,7 @@ python -m capability_probe
   state, measured-boot log, Secure Boot + dbx currency, drive firmware, HPA/DCO
   availability, and a CHIPSEC-driver **loadability assessment** (Q1) — no driver loaded.
 
-### First real result (host `Petra`, Gigabyte B450M DS3H, BIOS F50)
+### First real result (a Gigabyte B450M DS3H, BIOS F50)
 Evidence ceiling = **CANNOT-VERIFY**. No active DRTM/Secure Launch on this AM4 desktop →
 **no software path to CLEAN** (external SPI read is the only route). This is the honest,
 predicted outcome for a commodity desktop and is exactly why the product's headline
