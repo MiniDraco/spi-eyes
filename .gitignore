@@ -1,0 +1,21 @@
+# Machine scan artifacts -- contain host identity / hardware details. NEVER publish.
+out/
+fixtures/
+capability-*.json
+FirmwareAttest-*.json
+FirmwareAttest-*.txt
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# OS / editor
+Thumbs.db
+.DS_Store
+*.swp
+.idea/
+.vscode/
