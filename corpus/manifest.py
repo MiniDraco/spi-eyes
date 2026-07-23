@@ -229,5 +229,34 @@ def build_image_manifest(data: bytes, source: Optional[dict] = None) -> dict:
     return m
 
 
+def match_manifest(target: dict, reference: dict) -> MatchResult:
+    """Line-check a target image's manifest against a reference manifest (covers UEFI
+    modules AND coprocessor entries -- both are in the modules list)."""
+    tier = reference.get("source", {}).get("trust_tier", "unverified")
+    ref_code = [m for m in reference.get("modules", []) if m.get("is_code")]
+    ref_by_guid: Dict[str, set] = {}
+    for m in ref_code:
+        ref_by_guid.setdefault(m["guid"], set()).add(m["sha256"])
+    res = MatchResult(trust_tier=tier, code_total_ref=len(ref_code),
+                      clean_capable_tier=(tier in CLEAN_CAPABLE_TIERS))
+    seen = set()
+    for m in target.get("modules", []):
+        if not m.get("is_code"):
+            continue
+        g = m["guid"]
+        seen.add(g)
+        if g not in ref_by_guid:
+            res.extra.append({"guid": g, "type": m.get("type"), "sha256": m.get("sha256")})
+        elif m.get("sha256") in ref_by_guid[g]:
+            res.matched += 1
+        else:
+            res.mismatched.append({"guid": g, "type": m.get("type"), "sha256": m.get("sha256")})
+    for g in ref_by_guid:
+        if g not in seen:
+            res.missing.append({"guid": g})
+    res.all_code_matched = (res.matched == len(ref_code) and res.anomalies == 0)
+    return res
+
+
 def build_from_image(data: bytes, source: Optional[dict] = None) -> dict:
     return build_image_manifest(data, source=source)

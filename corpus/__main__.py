@@ -98,6 +98,7 @@ def cmd_lookup(a) -> int:
 
 
 def cmd_check(a) -> int:
+    from .manifest import build_image_manifest, load_manifest, match_manifest
     idx = CorpusIndex()
     e = idx.lookup(a.vendor, a.model, a.version)
     if not e:
@@ -105,11 +106,32 @@ def cmd_check(a) -> int:
               f"(have: {idx.versions_for(a.vendor, a.model) or 'none'})")
         print("verdict: CANNOT-VERIFY (never matched against a different version).")
         return 0
-    cr = _carve_file(a.image)
-    r = match(cr, load_manifest(e.path))
-    print(f"checked against {e.version} [{e.tier}]: matched={r.matched}/{r.code_total_ref} "
-          f"mismatch={len(r.mismatched)} missing={len(r.missing)} extra={len(r.extra)} "
-          f"-> {r.content_verdict}")
+    with open(a.image, "rb") as fh:
+        data = fh.read()
+    target = build_image_manifest(data)          # carve + unwrap + coproc
+    r = match_manifest(target, load_manifest(e.path))
+    print(f"checked vs {e.vendor} {e.model} {e.version} [{e.tier}] via {a.read} read")
+    print(f"  matched={r.matched}/{r.code_total_ref}  mismatch={len(r.mismatched)}  "
+          f"missing={len(r.missing)}  extra={len(r.extra)}")
+    for x in r.mismatched[:8]:
+        print(f"    ! MISMATCH {x['guid']}  {x.get('type','')}")
+    for x in r.extra[:8]:
+        print(f"    ! EXTRA    {x['guid']}  {x.get('type','')}")
+    print()
+    # The invariant: CLEAN needs a full match AND a trustworthy (non-blindable) read AND
+    # a clean-capable reference tier. A software/internal read is blindable -> CANNOT-VERIFY.
+    external = (a.read == "external")
+    if not r.all_code_matched:
+        print(f"  VERDICT: ANOMALOUS -- {r.anomalies} module deviation(s) from the reference.")
+    elif external and r.clean_capable_tier:
+        print("  VERDICT: CLEAN (Above-SMM) -- full match, trustworthy external read, "
+              "clean-capable reference. (SMM still unmeasured w/o a DRTM quote; R1.)")
+    elif external:
+        print(f"  VERDICT: CONTENT-MATCH -- full match on an external read, but the reference "
+              f"tier ({r.trust_tier}) is not clean-capable. Not CLEAN.")
+    else:
+        print("  VERDICT: CANNOT-VERIFY -- content matches, but a software/internal read is "
+              "blindable by a resident implant. Re-check with an external SPI read for CLEAN.")
     return 0
 
 
@@ -205,10 +227,13 @@ def main(argv) -> int:
     for f in ("vendor", "model", "version"):
         lk.add_argument("--" + f, required=True)
     lk.set_defaults(func=cmd_lookup)
-    ck = sub.add_parser("check", help="version-aware: lookup ref by version, then line-check")
-    ck.add_argument("image")
+    ck = sub.add_parser("check", help="version-aware: lookup ref by version, then line-check a dump")
+    ck.add_argument("image", help="a firmware image / external SPI dump of the machine")
     for f in ("vendor", "model", "version"):
         ck.add_argument("--" + f, required=True)
+    ck.add_argument("--read", choices=("external", "software"), default="software",
+                    help="external = off-CPU SPI read (trustworthy, CLEAN-capable); "
+                         "software = internal/driver read (blindable -> CANNOT-VERIFY)")
     ck.set_defaults(func=cmd_check)
     ls = sub.add_parser("list", help="show corpus coverage")
     ls.set_defaults(func=cmd_list)

@@ -130,6 +130,18 @@ def test_corroborate_agree_and_disagree():
     assert r2.manifest is None
 
 
+def test_match_manifest_clean_and_anomalous():
+    from corpus.manifest import build_manifest, match_manifest
+    ref = build_manifest(carve(fv([ffs(G1, T_DRIVER, b"aaa"), ffs(G2, T_DRIVER, b"bbb")])),
+                         source={"vendor": "V", "model": "M", "version": "1", "trust_tier": "vendor-signed"})
+    same = build_manifest(carve(fv([ffs(G1, T_DRIVER, b"aaa"), ffs(G2, T_DRIVER, b"bbb")])))
+    r = match_manifest(same, ref)
+    assert r.all_code_matched and r.clean_capable_tier      # full match + clean-capable tier
+    diff = build_manifest(carve(fv([ffs(G1, T_DRIVER, b"aaa"), ffs(G2, T_DRIVER, b"XXX")])))
+    r2 = match_manifest(diff, ref)
+    assert not r2.all_code_matched and len(r2.mismatched) == 1
+
+
 def test_unwrap_is_optional_and_graceful():
     from corpus.unwrap import available, unwrap
     assert isinstance(available(), bool)          # optional dep; may or may not be present
