@@ -9,6 +9,13 @@ verifier for commodity Windows PCs — a software realization of the NIST SP 800
 - **Contribute a firmware reference (crowdsource the corpus): [`SUBMIT.md`](SUBMIT.md)**
 - Red-team brief for other engines: [`ADVERSARIAL-PASS.md`](ADVERSARIAL-PASS.md)
 
+## GUI
+A zero-dependency (tkinter) dashboard: `python gui/spi_eyes_gui.py`. Four actions —
+**Scan Machine** (evidence ceiling + susceptibility), **Firmware Surface** (the fail-closed
+roll-call of every firmware-bearing chip), **Corpus** (coverage), **Check Dump…** (line-check
+a dump vs the reference, with the read-source trust prompt). Colour-coded so the honesty is
+visible: earned green is rare, most rows are honest grey (CANNOT-VERIFY) — never a fake green.
+
 ## The one idea
 
 You cannot prove a machine is *clean* from software running on top of possibly-compromised
