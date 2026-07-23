@@ -111,15 +111,44 @@ def _host_stores() -> List[Component]:
     ]
 
 
+def _platform_subchips() -> List[Component]:
+    """Firmware-bearing SUB-CHIPS the OS does not enumerate as devices. These sit on
+    internal LPC/SMBus/I2C/SPI buses invisible to Windows PnP -- so we NAME the known
+    classes (fail-closed: a sub-chip we can't name is a silent omission) and label how,
+    or whether, each is reachable. There is always a residual tail (retimers, PMICs,
+    PHYs) neither the OS nor host software can see -- stated, not hidden."""
+    return [
+        Component("CPU microcode", "CPU microcode patch", "SubChip", "", "",
+                  "REF-AVAILABLE", "in the SPI dump (microcode blobs in an FV)",
+                  "hashed when we carve a full dump"),
+        Component("Super I/O", "Super I/O controller (ITE/Nuvoton)", "SubChip", "", "",
+                  "CANNOT-VERIFY", "LPC/SMBus, vendor-specific", "not an OS-visible device"),
+        Component("board RGB/fan MCU", "lighting/fan controller (e.g. RGB Fusion)", "SubChip", "", "",
+                  "CANNOT-VERIFY", "SMBus/I2C, vendor tool", "MCU firmware on SMBus"),
+        Component("audio codec DSP", "audio codec firmware/verbs", "SubChip", "", "",
+                  "CANNOT-VERIFY", "HDA verb table / device fw", "only partially an OS device"),
+        Component("DIMM SPD / DDR5 PMIC", "memory SPD hub / DDR5 PMIC", "SubChip", "", "",
+                  "CANNOT-VERIFY", "SMBus (SPD/PMIC)", "DDR5 PMIC carries firmware"),
+        Component("VRM/PWM controller", "VRM / PMBus controller", "SubChip", "", "",
+                  "CANNOT-ENUMERATE", "SMBus (PMBus) if present", "usually no OS handle"),
+        Component("USB/PCIe retimer/redriver", "signal retimers / redrivers", "SubChip", "", "",
+                  "CANNOT-ENUMERATE", "internal; physical/vendor only", "invisible to OS + host sw"),
+        Component("NIC/PHY firmware", "Ethernet PHY firmware", "SubChip", "", "",
+                  "CANNOT-VERIFY", "GbE SPI region / device", "sub-block of the NIC"),
+    ]
+
+
 def enumerate_components() -> List[Component]:
-    return _host_stores() + _pnp_devices() + _disks()
+    return _host_stores() + _pnp_devices() + _disks() + _platform_subchips()
 
 
 def summarize(comps: List[Component]) -> dict:
     from collections import Counter
     cov = Counter(c.coverage for c in comps)
     return {"total": len(comps), "ref_available": cov.get("REF-AVAILABLE", 0),
-            "cannot_verify": cov.get("CANNOT-VERIFY", 0), "out_of_scope": cov.get("OUT-OF-SCOPE", 0)}
+            "cannot_verify": cov.get("CANNOT-VERIFY", 0),
+            "cannot_enumerate": cov.get("CANNOT-ENUMERATE", 0),
+            "out_of_scope": cov.get("OUT-OF-SCOPE", 0)}
 
 
 def main() -> int:
@@ -140,8 +169,11 @@ def main() -> int:
         print(f"                   read: {c.read_path}" + (f" — {c.note}" if c.note else ""))
     print("-" * 78)
     print(f"  {s['total']} firmware-bearing components: {s['ref_available']} reference-available, "
-          f"{s['cannot_verify']} CANNOT-VERIFY (blind), {s['out_of_scope']} out-of-scope")
-    print("  FAIL-CLOSED: every chip we cannot read is listed as CANNOT-VERIFY, never skipped.")
+          f"{s['cannot_verify']} CANNOT-VERIFY (blind), {s['cannot_enumerate']} CANNOT-ENUMERATE "
+          f"(known to exist, no OS handle), {s['out_of_scope']} out-of-scope")
+    print("  FAIL-CLOSED: nothing is silently skipped. Chips we can't read = CANNOT-VERIFY;")
+    print("  sub-chips we can't even detect = CANNOT-ENUMERATE (named, not hidden). A residual")
+    print("  tail (retimers, PMICs, PHYs) is unreachable by any host software -- stated, not pretended.")
     print("=" * 78)
     return 0
 
