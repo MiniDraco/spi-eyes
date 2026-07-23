@@ -112,6 +112,29 @@ def test_corpus_index_is_version_exact():
     assert set(idx.versions_for("Gigabyte", "B450M DS3H")) == {"F40", "F50"}
 
 
+def test_corroborate_agree_and_disagree():
+    from corpus.corroborate import corroborate
+    img = fv([ffs(G1, T_DRIVER, b"aaa"), ffs(G2, T_DRIVER, b"bbb")])
+    # 3 identical independent sources -> agree -> corroborated manifest
+    r = corroborate([("srcA", img), ("srcB", img), ("srcC", img)],
+                    vendor="V", model="M", version="1.0")
+    assert r.agree and not r.disagreements
+    assert r.manifest["source"]["trust_tier"] == "multi-source-corroborated"
+    # one source tampered -> disagreement flagged, no manifest
+    bad = fv([ffs(G1, T_DRIVER, b"aaa"), ffs(G2, T_DRIVER, b"HACKED")])
+    r2 = corroborate([("srcA", img), ("srcB", img), ("srcC", bad)],
+                     vendor="V", model="M", version="1.0")
+    assert not r2.agree
+    assert any(d["guid"] == "22222222-2222-2222-2222-222222222222" for d in r2.disagreements)
+    assert r2.manifest is None
+
+
+def test_corroborated_tier_not_clean_capable():
+    from corpus.manifest import CLEAN_CAPABLE_TIERS, TRUST_TIERS
+    assert "multi-source-corroborated" in TRUST_TIERS
+    assert "multi-source-corroborated" not in CLEAN_CAPABLE_TIERS  # N sources may share a bad origin
+
+
 def _run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

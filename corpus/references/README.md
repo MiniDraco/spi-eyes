@@ -30,19 +30,23 @@ F60=410, F64=419 code modules) — matching the wrong version would flag every
 legitimately-changed module as an implant. If the exact version isn't covered, the
 verdict is **CANNOT-VERIFY** (submit that version's manifest), never a cross-version match.
 
-## Ingestion
-`python -m corpus ingest <update-url> --vendor V --model M --version X`. For Gigabyte,
-direct URLs follow `download.gigabyte.com/FileList/BIOS/mb_bios_<model>_<ver>.zip`
-(sometimes an `_n`/`_a` suffix) — enumerable by pattern (crawlers miss them; the site
-is JS-rendered). The image is fetched, carved, hashed, and discarded; only this manifest remains.
+## Sources / ingestion (in trust order)
+- **LVFS (bulk, vendor-signed):** `python -m corpus lvfs --limit N` enumerates the
+  fwupd.org catalog and mints Tier-1 references. The legitimate "massive stack." Note:
+  much LVFS system firmware is Dell-PFS-wrapped or SoC/ARM — those are skipped until the
+  matching unwrapper exists; standard AMI/EDK2 capsules (HP, ASRock, Intel NUC…) carve now.
+- **Vendor pattern (per model+version):** `python -m corpus ingest <url> ...`. e.g. Gigabyte
+  `download.gigabyte.com/FileList/BIOS/mb_bios_<model>_<ver>.zip` (±`_n`/`_a`), enumerable by
+  pattern (crawlers miss it — the site is JS-rendered).
+- **Cross-source corroboration (grey provenance):** `python -m corpus corroborate <img1>
+  <img2> <img3> ...`. Same (vendor,model,version) from ≥2 independent sources; identical
+  per-module hashes → `multi-source-corroborated` tier (stronger than single-source, but
+  NOT clean-capable — N sources may share a tainted origin). Disagreement = tampered source.
 
-## Entries
-| File | Vendor | Model | Version | Tier | Code modules |
-|---|---|---|---|---|---|
-| `gigabyte_b450m-ds3h_f30.json` | Gigabyte | B450M DS3H | F30 | vendor-signed | 458 |
-| `gigabyte_b450m-ds3h_f50.json` | Gigabyte | B450M DS3H | F50 | vendor-signed | 599 |
-| `gigabyte_b450m-ds3h_f60.json` | Gigabyte | B450M DS3H | F60 | vendor-signed | 410 |
-| `gigabyte_b450m-ds3h_f64.json` | Gigabyte | B450M DS3H | F64 | vendor-signed | 419 |
+In every path the image is fetched, carved, hashed, and **discarded**; only the hash-only
+manifest remains.
 
-*(Minted from official Gigabyte updates; UEFI BIOS region only — AMD PSP + flash
-descriptor parsing is a pending unwrapper. Hash-only; contains no firmware code.)*
+## Coverage
+Run `python -m corpus list` for the live list. Currently multi-vendor (Gigabyte, HP,
+ASRock Industrial…), all `vendor-signed`, UEFI BIOS region only (AMD PSP + flash descriptor
++ Dell PFS unwrappers are pending). Every entry is hash-only — no firmware code.

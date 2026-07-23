@@ -25,7 +25,14 @@ from typing import Dict, List, Optional
 from .uefifv import CarveResult, carve
 
 MANIFEST_VERSION = "0.1"
-TRUST_TIERS = ("coreboot-reproducible", "vendor-signed", "first-seen", "consensus", "unverified")
+# ordered strongest -> weakest. "multi-source-corroborated" = the same (vendor,model,
+# version) image fetched from N independent sources produced identical per-module hashes
+# (cross-source agreement, the sourcing analogue of the external-vs-internal read check).
+# It is STRONGER than single-source unverified/consensus, but NOT clean-capable on its
+# own: N sources can share a common tampered origin. Only an authoritative source
+# (coreboot-reproducible / vendor-signed) earns clean-capability.
+TRUST_TIERS = ("coreboot-reproducible", "vendor-signed", "multi-source-corroborated",
+               "first-seen", "consensus", "unverified")
 CLEAN_CAPABLE_TIERS = {"coreboot-reproducible", "vendor-signed"}
 
 

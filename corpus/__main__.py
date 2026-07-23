@@ -119,6 +119,46 @@ def cmd_list(a) -> int:
     return 0
 
 
+def cmd_lvfs(a) -> int:
+    from .lvfs import ingest_lvfs
+    def _pr(r):
+        if r.get("ok"):
+            print(f"  + {r['vendor']} {r['model']} {r['version']}: {r['code_modules']} modules")
+        else:
+            print(f"  - {r['vendor']} {r['model']} {r['version']}: skip ({r['error']})")
+    res = ingest_lvfs(limit=a.limit, max_attempts=a.max_attempts, tier="vendor-signed", on_result=_pr)
+    ok = sum(1 for r in res if r.get("ok"))
+    print(f"\nLVFS ingest: {ok} references minted, {len(res)-ok} skipped (vendor wrappers / non-UEFI)")
+    return 0
+
+
+def cmd_corroborate(a) -> int:
+    from .corroborate import corroborate
+    srcs = []
+    for p in a.images:
+        with open(p, "rb") as fh:
+            srcs.append((p, fh.read()))
+    r = corroborate(srcs, vendor=a.vendor, model=a.model, version=a.version)
+    print(f"corroboration across {len(r.sources)} sources: {r.module_count} code modules")
+    if r.error:
+        print(f"  error: {r.error}")
+        return 1
+    if r.agree:
+        print("  AGREE -> all sources produced identical per-module hashes.")
+        print("  tier: multi-source-corroborated (stronger than single-source; NOT clean-capable")
+        print("        unless one source is authoritative -- N sources may share a tainted origin).")
+        if a.out and r.manifest:
+            from .manifest import save_manifest
+            save_manifest(r.manifest, a.out)
+            print(f"  -> {a.out}")
+    else:
+        print(f"  DISAGREE -> {len(r.disagreements)} module(s) differ across sources.")
+        print("  At least one source is tampered or corrupt. DO NOT ingest; investigate:")
+        for d in r.disagreements[:8]:
+            print(f"    ! {d['guid']}: {d['per_source']}")
+    return 0
+
+
 def main(argv) -> int:
     p = argparse.ArgumentParser(prog="corpus", description=__doc__)
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -153,6 +193,16 @@ def main(argv) -> int:
     ck.set_defaults(func=cmd_check)
     ls = sub.add_parser("list", help="show corpus coverage")
     ls.set_defaults(func=cmd_list)
+    lv = sub.add_parser("lvfs", help="bulk-ingest vendor-signed references from LVFS")
+    lv.add_argument("--limit", type=int, default=8, help="stop after N successful references")
+    lv.add_argument("--max-attempts", dest="max_attempts", type=int, default=20)
+    lv.set_defaults(func=cmd_lvfs)
+    co = sub.add_parser("corroborate", help="cross-check the same version from >=2 sources")
+    co.add_argument("images", nargs="+", help="the same (vendor,model,version) image from N sources")
+    for f in ("vendor", "model", "version"):
+        co.add_argument("--" + f, required=True)
+    co.add_argument("--out", help="write a corroborated manifest if sources agree")
+    co.set_defaults(func=cmd_corroborate)
     args = p.parse_args(argv)
     return args.func(args)
 
