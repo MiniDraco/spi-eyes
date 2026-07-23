@@ -5,6 +5,13 @@ capability-*.json
 FirmwareAttest-*.json
 FirmwareAttest-*.txt
 
+# Firmware images + minted manifests (may be machine data / large / licensed)
+*.fd
+*.rom
+*.bin
+*.cap
+*.manifest.json
+
 # Python
 __pycache__/
 *.py[cod]

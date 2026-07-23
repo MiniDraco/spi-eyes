@@ -113,17 +113,21 @@ Map each to SUSCEPTIBILITY verdicts. Remember: these read *susceptibility, not i
 and the reads themselves are blindable → INFECTION stays CANNOT-VERIFY.
 
 ## Phase 4 — Content / image tier + the external-read primitive
-- SPI dump (CHIPSEC/flashrom internal) → parse with UEFITool / uefi-firmware-parser /
-  MEAnalyzer / PSPTool → per-module hashing (catches MoonBounce-style in-place hooks) →
-  fwhunt-scan known-bad rules.
-- **External-vs-internal diff (C3):** implement the powered-off sequential external read
-  (Phase 7 kit) and the divergence check, **with a benign-divergence diagnostic tree**
-  (descriptor read-lock vs flash shadowing vs bus contention) before flagging infection.
+**Carver + matcher: DONE (zero-dep).** `corpus/uefifv.py` carves a UEFI image into per-FFS
+modules (GUID + type + SHA-256), descending through **LZMA-compressed volumes** and nested
+FVs. `corpus/manifest.py` mints a reference manifest and does the **line check** (per-module
+match / mismatch / missing / extra) — catches MoonBounce-style in-place hooks. Validated on a
+real 4 MB OVMF image (119 code modules; 1-byte tamper → caught) + `tests/test_corpus.py`.
+`python -m corpus build|match`. Remaining: ME/PSP + Dell-PFS/Insyde vendor unwrappers;
+Tiano (non-LZMA) decompression; **external-vs-internal diff (C3)** with a benign-divergence
+diagnostic tree (needs a live dump — external read / driver).
 
 ## Phase 5 — Corpus (CoRIM), tiered + anomaly-only consensus (R3)
-CoRIM schema. Seed Tier 0 (coreboot reproducible) + Tier 1 (LVFS/capsules). Tier 2 first-seen
-baseline. Tier 3 population consensus is **anomaly-only, never CLEAN** + canary drift alarm.
-Surface provenance in every match ("authoritative" vs "consensus" vs "no reference").
+**Trust tiers: DONE** (`manifest.py`): coreboot-reproducible / vendor-signed are clean-capable;
+first-seen / consensus are **anomaly-only, never CLEAN** (enforced + tested). Remaining: the
+**LVFS/vendor-update ingester** (fetch official update → unwrap → mint Tier-1 manifest — "the
+cypher is the vendor's own update file"); CoRIM serialization; first-seen baseline store;
+population-consensus + canary drift alarm; provenance surfaced in every verdict.
 
 ## Phase 6 — Verdict emission + non-suppressibility (R4/R5)
 - Sign the verdict as an **EAT (RFC 9711)** nonce-bound token (wrap `veraison/eat`).
