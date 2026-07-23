@@ -197,5 +197,26 @@ def match(target: CarveResult, manifest: dict) -> MatchResult:
     return res
 
 
+def build_image_manifest(data: bytes, source: Optional[dict] = None) -> dict:
+    """Full manifest for a firmware image: UEFI per-module hashes PLUS the coprocessor
+    (Intel ME / AMD PSP) per-entry hashes carved from the same SPI image."""
+    from .coproc import parse as parse_coproc
+    m = build_manifest(carve(data), source=source)
+    co = parse_coproc(data)
+    added = 0
+    for e in co.entries:
+        if e.sha256:
+            m["modules"].append({
+                "guid": f"{e.kind.lower()}:{e.name}:{e.offset:08x}",
+                "type": f"coproc/{e.kind}", "sha256": e.sha256, "is_code": True})
+            added += 1
+    if added:
+        m["module_count"] = len(m["modules"])
+        m["code_module_count"] = sum(1 for x in m["modules"] if x.get("is_code"))
+        m["source"]["coproc"] = co.kind
+        m["source"]["coproc_entries"] = added
+    return m
+
+
 def build_from_image(data: bytes, source: Optional[dict] = None) -> dict:
-    return build_manifest(carve(data), source=source)
+    return build_image_manifest(data, source=source)

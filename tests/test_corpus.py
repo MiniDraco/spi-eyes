@@ -130,6 +130,21 @@ def test_corroborate_agree_and_disagree():
     assert r2.manifest is None
 
 
+def test_coproc_amd_psp_parse():
+    import hashlib
+    from corpus.coproc import parse_amd_psp
+    n = 0x100000
+    buf = bytearray(n)
+    payload = b"PSP-BOOTLOADER-CODE" * 12
+    buf[0x1000:0x1000 + len(payload)] = payload
+    struct.pack_into("<4sIII", buf, 0x2000, b"$PSP", 0, 1, 0)   # cookie, csum, num=1, info
+    struct.pack_into("<IIQ", buf, 0x2010, 1, len(payload), 0x1000)  # type=1, size, addr
+    entries = parse_amd_psp(bytes(buf))
+    assert len(entries) == 1
+    assert entries[0].name == "PSP_BOOTLOADER"
+    assert entries[0].sha256 == hashlib.sha256(payload).hexdigest()
+
+
 def test_validate_accepts_hash_only_rejects_embedded_code():
     from corpus.manifest import build_manifest, validate_manifest
     good = build_manifest(carve(fv([ffs(G1, T_DRIVER, b"aaa")])),

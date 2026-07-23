@@ -27,7 +27,7 @@ import xml.etree.ElementTree as ET
 from typing import Dict, List, Optional
 
 from .index import DEFAULT_REFS_DIR, norm
-from .manifest import build_blob_manifest, build_manifest, save_manifest
+from .manifest import build_blob_manifest, build_image_manifest, save_manifest
 from .uefifv import carve
 
 CATALOG_URL = "https://cdn.fwupd.org/downloads/firmware.xml.gz"
@@ -138,9 +138,9 @@ def ingest_lvfs(limit: int = 8, max_attempts: int = 20, category: Optional[str] 
                        "image_sha256": hashlib.sha256(payload).hexdigest()}
                 cr = carve(payload)
                 code = [f for f in cr.all_files if f.is_code]
-                if code:                      # UEFI/BIOS -> fine-grained per-module
-                    src["region"] = "UEFI BIOS region (ME/PSP + descriptor not yet parsed)"
-                    m = build_manifest(cr, source=src)
+                if code:                      # UEFI/BIOS -> fine-grained per-module (+ ME/PSP)
+                    src["region"] = "UEFI BIOS region + ME/PSP coprocessor"
+                    m = build_image_manifest(payload, source=src)
                     kind, nmod = "modules", m["code_module_count"]
                 else:                         # opaque chip/device firmware -> whole-image blob
                     m = build_blob_manifest(payload, source=src, component_type=e["category"])

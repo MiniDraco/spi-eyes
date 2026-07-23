@@ -29,14 +29,17 @@ def _carve_file(path: str):
 
 
 def cmd_build(a) -> int:
-    cr = _carve_file(a.image)
+    from .manifest import build_image_manifest
+    with open(a.image, "rb") as fh:
+        data = fh.read()
     source = {"vendor": a.vendor, "model": a.model, "version": a.version,
               "url": a.url, "trust_tier": a.tier}
-    m = build_manifest(cr, source={k: v for k, v in source.items() if v})
+    m = build_image_manifest(data, source={k: v for k, v in source.items() if v})
     out = a.out or (a.image + ".manifest.json")
     save_manifest(m, out)
-    print(f"carved {len(cr.all_files)} files ({m['code_module_count']} code modules) "
-          f"from {len(cr.fvs)} FVs")
+    co = m["source"].get("coproc")
+    print(f"{m['code_module_count']} code modules"
+          + (f" (incl. {m['source'].get('coproc_entries')} {co} coprocessor entries)" if co else ""))
     print(f"trust tier: {m['source'].get('trust_tier')}")
     print(f"manifest -> {out}")
     return 0

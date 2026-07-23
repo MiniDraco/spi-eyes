@@ -18,7 +18,7 @@ import zipfile
 from typing import List, Optional, Tuple
 
 from .index import DEFAULT_REFS_DIR, norm
-from .manifest import build_manifest, save_manifest
+from .manifest import build_image_manifest, save_manifest
 from .uefifv import carve
 
 _UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) SPI-Eyes-corpus-ingester"}
@@ -69,10 +69,10 @@ def ingest(url: str, vendor: str, model: str, version: str,
     if not cr.ok or not cr.all_files:
         return {"ok": False, "url": url, "error": f"carve failed: {cr.error}"}
     import hashlib
-    m = build_manifest(cr, source={
+    m = build_image_manifest(data, source={
         "vendor": vendor, "model": model, "version": version, "trust_tier": tier,
         "source_url": url, "image_member": name, "image_sha256": hashlib.sha256(data).hexdigest(),
-        "region": "UEFI BIOS region (ME/PSP + descriptor not yet parsed)",
+        "region": "UEFI BIOS region + ME/PSP coprocessor (flash descriptor not parsed)",
     })
     os.makedirs(refs_dir, exist_ok=True)
     fname = f"{_slug(vendor)}_{_slug(model)}_{_slug(version)}.json"

@@ -1,8 +1,9 @@
 {
   "spi_eyes_manifest": "0.1",
+  "kind": "modules",
   "image_sha256": "0c71347f5afddaf75721607a7cc0cc3f8ffa163a0730b119140dd5d5abbbe26d",
-  "module_count": 599,
-  "code_module_count": 599,
+  "module_count": 615,
+  "code_module_count": 615,
   "source": {
     "vendor": "Gigabyte",
     "model": "B450M DS3H",
@@ -10,7 +11,9 @@
     "trust_tier": "vendor-signed",
     "source_url": "https://download.gigabyte.com/FileList/BIOS/mb_bios_b450m-ds3h_f50_n.zip",
     "image_sha256": "0c71347f5afddaf75721607a7cc0cc3f8ffa163a0730b119140dd5d5abbbe26d",
-    "region": "UEFI BIOS region only (AMD PSP + flash descriptor not yet parsed)"
+    "region": "UEFI BIOS region + AMD PSP (flash descriptor not parsed)",
+    "coproc": "AMD-PSP",
+    "coproc_entries": 16
   },
   "modules": [
     {
@@ -3605,6 +3608,102 @@
       "guid": "1ba0062e-c779-4582-8566-336ae8f78f09",
       "type": "SECURITY_CORE",
       "sha256": "b210f64b505714637175b3b31fbb8f56c9c58de184cc9aa7d08b2cdc2a76dd2e",
+      "is_code": true
+    },
+    {
+      "guid": "amd-psp:AMD_PUBLIC_KEY:000a8400",
+      "type": "coproc/AMD-PSP",
+      "sha256": "8efddcaaf84990cf6354d93637be270220cf15797332b3d918c3b8cc77349f31",
+      "is_code": true
+    },
+    {
+      "guid": "amd-psp:PSP_BOOTLOADER:003d0400",
+      "type": "coproc/AMD-PSP",
+      "sha256": "2688e5597be5018e5ac9ec6fe1cd294451bc5bdb15f6073f98df88e1b6b49853",
+      "is_code": true
+    },
+    {
+      "guid": "amd-psp:PSP_RECOVERY_BOOTLOADER:000a8700",
+      "type": "coproc/AMD-PSP",
+      "sha256": "601282da429812f48f411aa73029910e91838888c5596f61a173e2298be96eb7",
+      "is_code": true
+    },
+    {
+      "guid": "amd-psp:SMU_FIRMWARE:000b3d00",
+      "type": "coproc/AMD-PSP",
+      "sha256": "acfb4abd7d47c94b038414fd8fa040ba393721953e75b7655a98ff5c87545615",
+      "is_code": true
+    },
+    {
+      "guid": "amd-psp:SMU_FIRMWARE:000d1600",
+      "type": "coproc/AMD-PSP",
+      "sha256": "e9949fcb1563b8876c03e1da02e16506fa7a731e7a27475f876126c39f63f25e",
+      "is_code": true
+    },
+    {
+      "guid": "amd-psp:OEM_PSP_FW_KEY:000eaa00",
+      "type": "coproc/AMD-PSP",
+      "sha256": "18209a247b0f1a49873c7131dbb51b70ca73bb11651ca3525cc0b26f7d488600",
+      "is_code": true
+    },
+    {
+      "guid": "amd-psp:WRAPPED_IKEK:000eae00",
+      "type": "coproc/AMD-PSP",
+      "sha256": "0b1429e143abef50f26ff19fdd095e7695f81fdc866055ce9c764066d59bac63",
+      "is_code": true
+    },
+    {
+      "guid": "amd-psp:AGESA_0:000eaf00",
+      "type": "coproc/AMD-PSP",
+      "sha256": "278087a26977e901efa636ace3c91d717cc539a3e723a569b1e0a3cd2c9d7314",
+      "is_code": true
+    },
+    {
+      "guid": "amd-psp:0x31:000ebd00",
+      "type": "coproc/AMD-PSP",
+      "sha256": "5b7d59cd57a9dd26a8abfe7a32f0df875e3bfb9e8f3a2e28a52420117e9bec19",
+      "is_code": true
+    },
+    {
+      "guid": "amd-psp:0x32:000f8e00",
+      "type": "coproc/AMD-PSP",
+      "sha256": "5103986944cf05dbefd5e5533410740a269e8208941847d10652488098c95228",
+      "is_code": true
+    },
+    {
+      "guid": "amd-psp:0x33:00103300",
+      "type": "coproc/AMD-PSP",
+      "sha256": "255c522f3001686712cd098929247211b8c5167072ef12d19c481bda44bb4f7c",
+      "is_code": true
+    },
+    {
+      "guid": "amd-psp:0x34:0010e800",
+      "type": "coproc/AMD-PSP",
+      "sha256": "b39001f0f795f301d07d7202156ef0fb50cab0d3309f97edc720975bb66b2fe3",
+      "is_code": true
+    },
+    {
+      "guid": "amd-psp:0x35:00118700",
+      "type": "coproc/AMD-PSP",
+      "sha256": "8d5a0e08e1d6b134aab87651e9f55f9759d8bcfb18f02fe365e85bc3d2dc342a",
+      "is_code": true
+    },
+    {
+      "guid": "amd-psp:0x36:00125e00",
+      "type": "coproc/AMD-PSP",
+      "sha256": "dd3001a635588c2d41327f11503d81511bb912227c1dda4cfa18167188107fbc",
+      "is_code": true
+    },
+    {
+      "guid": "amd-psp:SEC_GASKET:00131100",
+      "type": "coproc/AMD-PSP",
+      "sha256": "cc4cd5c16ef9e8a0e05fd3beec2324d762673069fb8586457b2d43829144f88c",
+      "is_code": true
+    },
+    {
+      "guid": "amd-psp:PSP_DIR_L2_2:003d0000",
+      "type": "coproc/AMD-PSP",
+      "sha256": "cdc89ba416a756f9fc4b20ccad102d90a1282ac384b0662136e1a8cc40112a15",
       "is_code": true
     }
   ]
