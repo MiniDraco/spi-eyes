@@ -1,0 +1,19 @@
+{
+  "spi_eyes_manifest": "0.1",
+  "kind": "blob",
+  "image_sha256": "8110960684e23eaf9ed7b139be6ce47ca6f211171917ebb37272734f88dadb12",
+  "image_size": 519041,
+  "module_count": 0,
+  "code_module_count": 0,
+  "source": {
+    "vendor": "Acer",
+    "model": "Veriton GN100 fused",
+    "version": "0x3000302",
+    "trust_tier": "vendor-signed",
+    "source": "LVFS",
+    "source_url": "https://cdn.fwupd.org/downloads/f124617bf96c0811a7ac800ebbaef443d833db49a79d8360186f253086df50e7-GN100_ecfw_fused_3.3.2.cab",
+    "component_type": "X-EmbeddedController",
+    "image_sha256": "8110960684e23eaf9ed7b139be6ce47ca6f211171917ebb37272734f88dadb12"
+  },
+  "modules": []
+}

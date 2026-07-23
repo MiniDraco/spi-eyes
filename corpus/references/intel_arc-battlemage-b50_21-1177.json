@@ -1,0 +1,19 @@
+{
+  "spi_eyes_manifest": "0.1",
+  "kind": "blob",
+  "image_sha256": "28c1b0b06fa46fa2a45ee694e347171f15c72ef40708dbf5a2129d90b5ca456b",
+  "image_size": 2101248,
+  "module_count": 0,
+  "code_module_count": 0,
+  "source": {
+    "vendor": "Intel",
+    "model": "Arc Battlemage B50",
+    "version": "21.1177",
+    "trust_tier": "vendor-signed",
+    "source": "LVFS",
+    "source_url": "https://cdn.fwupd.org/downloads/a4dedea0bb88dd9f0cb9260dc7c065fda60d926c739c2ef5f007ecaf1e6d5637-intel-arc-bmg-21.1180.cab",
+    "component_type": "X-Gpu,X-Device",
+    "image_sha256": "28c1b0b06fa46fa2a45ee694e347171f15c72ef40708dbf5a2129d90b5ca456b"
+  },
+  "modules": []
+}

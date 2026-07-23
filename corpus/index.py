@@ -34,6 +34,8 @@ class Entry:
     tier: str
     code_modules: int
     path: str
+    kind: str = "modules"        # "modules" (UEFI, per-module) or "blob" (opaque chip fw)
+    component: str = ""          # LVFS category, e.g. X-Gpu / X-ManagementEngine
 
 
 class CorpusIndex:
@@ -50,7 +52,8 @@ class CorpusIndex:
                 src = m.get("source", {})
                 e = Entry(vendor=src.get("vendor", ""), model=src.get("model", ""),
                           version=src.get("version", ""), tier=src.get("trust_tier", "unverified"),
-                          code_modules=m.get("code_module_count", 0), path=path)
+                          code_modules=m.get("code_module_count", 0), path=path,
+                          kind=m.get("kind", "modules"), component=src.get("component_type", ""))
                 if e.vendor and e.model and e.version:
                     self._by_key[key_of(e.vendor, e.model, e.version)] = e
             except (OSError, json.JSONDecodeError, ValueError):

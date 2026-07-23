@@ -51,12 +51,38 @@ def build_manifest(cr: CarveResult, source: Optional[dict] = None,
     src["trust_tier"] = tier
     return {
         "spi_eyes_manifest": MANIFEST_VERSION,
+        "kind": "modules",
         "image_sha256": cr.image_sha256,
         "module_count": len(mods),
         "code_module_count": sum(1 for m in mods if m["is_code"]),
         "source": src,
         "modules": mods,
     }
+
+
+def build_blob_manifest(data: bytes, source: Optional[dict] = None,
+                        component_type: Optional[str] = None) -> dict:
+    """Whole-image reference for chip/device firmware we can't carve into modules
+    (SSD/NVMe/Thunderbolt/NIC/EC/ME/PSP blobs). Coarser than per-module: it detects
+    ANY change to the firmware image but cannot localize which byte changed."""
+    src = dict(source or {})
+    tier = src.get("trust_tier", "unverified")
+    src["trust_tier"] = tier if tier in TRUST_TIERS else "unverified"
+    if component_type:
+        src["component_type"] = component_type
+    return {
+        "spi_eyes_manifest": MANIFEST_VERSION, "kind": "blob",
+        "image_sha256": hashlib.sha256(data).hexdigest(), "image_size": len(data),
+        "module_count": 0, "code_module_count": 0, "source": src, "modules": [],
+    }
+
+
+def match_blob(data: bytes, manifest: dict) -> dict:
+    """Whole-image match for a blob reference."""
+    got = hashlib.sha256(data).hexdigest()
+    exp = manifest.get("image_sha256")
+    return {"match": got == exp, "expected": exp, "got": got,
+            "content_verdict": "CONTENT-MATCH" if got == exp else "ANOMALOUS"}
 
 
 def save_manifest(m: dict, path: str) -> None:

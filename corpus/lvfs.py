@@ -27,7 +27,7 @@ import xml.etree.ElementTree as ET
 from typing import Dict, List, Optional
 
 from .index import DEFAULT_REFS_DIR, norm
-from .manifest import build_manifest, save_manifest
+from .manifest import build_blob_manifest, build_manifest, save_manifest
 from .uefifv import carve
 
 CATALOG_URL = "https://cdn.fwupd.org/downloads/firmware.xml.gz"
@@ -59,8 +59,12 @@ def parse_catalog(xml_bytes: bytes, category: Optional[str] = "X-System") -> Lis
     return out
 
 
-def _extract_payload(cab_bytes: bytes) -> Optional[bytes]:
-    """Extract a .cab and return the largest UEFI payload (a file containing _FVH)."""
+_META_EXT = (".cab", ".metainfo.xml", ".jcat", ".inf", ".txt", ".asc", ".sig")
+
+
+def _extract_firmware(cab_bytes: bytes) -> Optional[bytes]:
+    """Extract a .cab and return the firmware payload: the largest non-metadata file.
+    Works for UEFI capsules AND opaque chip/device firmware blobs (SSD/TB/NIC/EC)."""
     d = tempfile.mkdtemp()
     try:
         cabp = os.path.join(d, "fw.cab")
@@ -74,11 +78,12 @@ def _extract_payload(cab_bytes: bytes) -> Optional[bytes]:
             return None
         best = None
         for f in glob.glob(os.path.join(d, "**", "*"), recursive=True):
-            if os.path.isfile(f) and not f.lower().endswith(".cab"):
-                with open(f, "rb") as fh:
-                    data = fh.read()
-                if b"_FVH" in data and (best is None or len(data) > len(best)):
-                    best = data
+            if not os.path.isfile(f) or f.lower().endswith(_META_EXT) or "readme" in os.path.basename(f).lower():
+                continue
+            with open(f, "rb") as fh:
+                data = fh.read()
+            if best is None or len(data) > len(best):
+                best = data
         return best
     finally:
         shutil.rmtree(d, ignore_errors=True)
@@ -92,7 +97,7 @@ def _slug(s: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", norm(s)).strip("-") or "x"
 
 
-def ingest_lvfs(limit: int = 8, max_attempts: int = 20, category: str = "X-System",
+def ingest_lvfs(limit: int = 8, max_attempts: int = 20, category: Optional[str] = None,
                 tier: str = "vendor-signed", refs_dir: str = DEFAULT_REFS_DIR,
                 skip_vendors=("dell",), delay: float = 1.5, on_result=None) -> List[dict]:
     """Ingest up to `limit` successful vendor-signed references from LVFS.
@@ -120,26 +125,31 @@ def ingest_lvfs(limit: int = 8, max_attempts: int = 20, category: str = "X-Syste
         attempts += 1
         if attempts > 1 and delay:
             time.sleep(delay)
-        r = {"vendor": e["vendor"], "model": e["model"], "version": e["version"]}
+        r = {"vendor": e["vendor"], "model": e["model"], "version": e["version"],
+             "category": e["category"]}
         try:
-            payload = _extract_payload(download(e["url"]))
+            payload = _extract_firmware(download(e["url"]))
             if not payload:
-                r.update(ok=False, error="no UEFI payload (vendor wrapper not supported)")
+                r.update(ok=False, error="no extractable firmware payload")
             else:
+                src = {"vendor": e["vendor"], "model": e["model"], "version": e["version"],
+                       "trust_tier": tier, "source": "LVFS", "source_url": e["url"],
+                       "component_type": e["category"],
+                       "image_sha256": hashlib.sha256(payload).hexdigest()}
                 cr = carve(payload)
                 code = [f for f in cr.all_files if f.is_code]
-                if not cr.ok or not code:
-                    r.update(ok=False, error="carve found no code modules")
-                else:
-                    m = build_manifest(cr, source={
-                        "vendor": e["vendor"], "model": e["model"], "version": e["version"],
-                        "trust_tier": tier, "source": "LVFS", "source_url": e["url"],
-                        "image_sha256": hashlib.sha256(payload).hexdigest(),
-                        "region": "UEFI BIOS region (ME/PSP + descriptor not yet parsed)"})
-                    fn = f"{_slug(e['vendor'])}_{_slug(e['model'])}_{_slug(e['version'])}.json"
-                    save_manifest(m, os.path.join(refs_dir, fn))
-                    r.update(ok=True, code_modules=m["code_module_count"], file=fn)
-                    ok_count += 1
+                if code:                      # UEFI/BIOS -> fine-grained per-module
+                    src["region"] = "UEFI BIOS region (ME/PSP + descriptor not yet parsed)"
+                    m = build_manifest(cr, source=src)
+                    kind, nmod = "modules", m["code_module_count"]
+                else:                         # opaque chip/device firmware -> whole-image blob
+                    m = build_blob_manifest(payload, source=src, component_type=e["category"])
+                    kind, nmod = "blob", 0
+                fn = f"{_slug(e['vendor'])}_{_slug(e['model'])}_{_slug(e['version'])}.json"
+                save_manifest(m, os.path.join(refs_dir, fn))
+                r.update(ok=True, kind=kind, code_modules=nmod, file=fn,
+                         image_kb=len(payload) // 1024)
+                ok_count += 1
         except Exception as ex:  # noqa: BLE001
             r.update(ok=False, error=f"{type(ex).__name__}: {ex}")
         results.append(r)

@@ -46,7 +46,17 @@ verdict is **CANNOT-VERIFY** (submit that version's manifest), never a cross-ver
 In every path the image is fetched, carved, hashed, and **discarded**; only the hash-only
 manifest remains.
 
+## Two reference granularities
+- **`modules`** — UEFI/BIOS firmware carved into per-module hashes (localizes tampering,
+  MoonBounce-style). Requires a parseable firmware volume.
+- **`blob`** — a whole-image hash for opaque **chip/device firmware** we can't carve
+  (SSD/NVMe, GPU, Intel ME / AMD PSP, Embedded Controller, Thunderbolt/USB-C, docks).
+  Detects ANY change to the image but can't localize it. LVFS carries these too.
+
 ## Coverage
-Run `python -m corpus list` for the live list. Currently multi-vendor (Gigabyte, HP,
-ASRock Industrial…), all `vendor-signed`, UEFI BIOS region only (AMD PSP + flash descriptor
-+ Dell PFS unwrappers are pending). Every entry is hash-only — no firmware code.
+Run `python -m corpus list` for the live list. Multi-vendor, multi-component: BIOS
+(Gigabyte/HP/ASRock, per-module) **plus chip firmware** — GPU (Intel Arc), Management
+Engine (Lenovo), Embedded Controller / USB-C PD (Acer) as blobs. All `vendor-signed`,
+all hash-only. Pending unwrappers (Dell PFS, AMD PSP, flash descriptor) will convert some
+blobs to per-module. The IRATEMONK-class target (SSD/HDD *controller* content) is largely
+version-pin + anomaly only — vendors rarely publish those images.

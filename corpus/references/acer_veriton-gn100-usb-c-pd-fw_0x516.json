@@ -1,0 +1,19 @@
+{
+  "spi_eyes_manifest": "0.1",
+  "kind": "blob",
+  "image_sha256": "4566b7799c0630d5705d7a8a16ff590b96b2c005a6c70f3e4a88b1abc0efffe3",
+  "image_size": 1051521,
+  "module_count": 0,
+  "code_module_count": 0,
+  "source": {
+    "vendor": "Acer",
+    "model": "Veriton GN100 USB-C PD FW",
+    "version": "0x516",
+    "trust_tier": "vendor-signed",
+    "source": "LVFS",
+    "source_url": "https://cdn.fwupd.org/downloads/1934597fd993e066669b27d8638f0a87d48720e218f28f779028d3760a995a61-GN100_usbpd_5.22.cab",
+    "component_type": "X-Controller",
+    "image_sha256": "4566b7799c0630d5705d7a8a16ff590b96b2c005a6c70f3e4a88b1abc0efffe3"
+  },
+  "modules": []
+}

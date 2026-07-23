@@ -1,0 +1,19 @@
+{
+  "spi_eyes_manifest": "0.1",
+  "kind": "blob",
+  "image_sha256": "d4457f03e82ce1622881af38717a0117f61e0a51fb94837a8721cf0804d0d03e",
+  "image_size": 7348224,
+  "module_count": 0,
+  "code_module_count": 0,
+  "source": {
+    "vendor": "Lenovo",
+    "model": "ThinkStation P720",
+    "version": "11.22.96.2588",
+    "trust_tier": "vendor-signed",
+    "source": "LVFS",
+    "source_url": "https://cdn.fwupd.org/downloads/ad47a92f7b15c3cac262f1fd964a04c71b619deea6b270bc0e252f096b5613d5-Lenovo-ThinkStation-P920-P720-ME-Firmware-11.22.96.2588.cab",
+    "component_type": "X-CorporateManagementEngine,X-ManagementEngine",
+    "image_sha256": "d4457f03e82ce1622881af38717a0117f61e0a51fb94837a8721cf0804d0d03e"
+  },
+  "modules": []
+}

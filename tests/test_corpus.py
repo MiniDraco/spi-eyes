@@ -129,6 +129,19 @@ def test_corroborate_agree_and_disagree():
     assert r2.manifest is None
 
 
+def test_blob_manifest_for_opaque_chip_firmware():
+    from corpus.manifest import build_blob_manifest, match_blob
+    fw = b"opaque-ssd-controller-firmware-blob" * 100   # non-UEFI, no FVs
+    m = build_blob_manifest(fw, source={"vendor": "ACME", "model": "SSD-X",
+                                        "version": "1.2", "trust_tier": "vendor-signed"},
+                            component_type="X-Device")
+    assert m["kind"] == "blob"
+    assert m["source"]["component_type"] == "X-Device"
+    assert match_blob(fw, m)["content_verdict"] == "CONTENT-MATCH"
+    tampered = fw[:-1] + b"X"
+    assert match_blob(tampered, m)["content_verdict"] == "ANOMALOUS"
+
+
 def test_corroborated_tier_not_clean_capable():
     from corpus.manifest import CLEAN_CAPABLE_TIERS, TRUST_TIERS
     assert "multi-source-corroborated" in TRUST_TIERS

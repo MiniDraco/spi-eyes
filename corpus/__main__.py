@@ -115,7 +115,9 @@ def cmd_list(a) -> int:
     cov = idx.coverage()
     print(f"corpus: {cov['entries']} entries, {cov['models']} models, {cov['vendors']} vendors")
     for e in idx.all_entries():
-        print(f"  {e.vendor} / {e.model} / {e.version} [{e.tier}] {e.code_modules} modules")
+        what = (f"{e.code_modules} modules" if e.kind == "modules"
+                else f"blob [{e.component or 'chip fw'}]")
+        print(f"  {e.vendor} / {e.model} / {e.version} [{e.tier}] {what}")
     return 0
 
 
@@ -123,7 +125,9 @@ def cmd_lvfs(a) -> int:
     from .lvfs import ingest_lvfs
     def _pr(r):
         if r.get("ok"):
-            print(f"  + {r['vendor']} {r['model']} {r['version']}: {r['code_modules']} modules")
+            what = (f"{r['code_modules']} modules" if r.get("kind") == "modules"
+                    else f"blob {r.get('image_kb', '?')}KB [{r.get('category', '')}]")
+            print(f"  + {r['vendor']} {r['model']} {r['version']}: {what}")
         else:
             print(f"  - {r['vendor']} {r['model']} {r['version']}: skip ({r['error']})")
     res = ingest_lvfs(limit=a.limit, max_attempts=a.max_attempts, tier="vendor-signed", on_result=_pr)
