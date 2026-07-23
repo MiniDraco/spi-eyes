@@ -35,3 +35,6 @@ Thumbs.db
 *.swp
 .idea/
 .vscode/
+
+# Staged USB payload (assembled from source)
+usb-payload/
