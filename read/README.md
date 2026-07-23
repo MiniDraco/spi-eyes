@@ -25,6 +25,15 @@ implant cannot spoof. It is the only path to an **earned CLEAN** for flash conte
 **Genuine clips matter** — clone clips are the #1 cause of unstable reads. WSON/QFN
 packages need a different clip or a socket adapter.
 
+**Your programmer isn't in the table above?** flashrom already supports ~50 of them behind
+one `-p` flag — we don't write a driver per device, we just hand flashrom the right string.
+See the curated registry (CH341A, CH347, FT2232/Tigard, Pi Pico serprog, Bus Pirate,
+Dediprog, ST-Link, J-Link, …):
+```
+python read/programmers.py            # list
+python read/programmers.py ch341a     # look up yours
+```
+
 ## CH341A specifics (read this before you clip)
 1. **Voltage — the one that can damage the chip.** Most CH341A "black" boards drive the
    SPI pins at ~**5 V** even though BIOS flash is **3.3 V**. Reading is lower-risk than
