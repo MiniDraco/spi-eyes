@@ -19,8 +19,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from .uefifv import CarveResult, carve
 
@@ -83,6 +84,50 @@ def match_blob(data: bytes, manifest: dict) -> dict:
     exp = manifest.get("image_sha256")
     return {"match": got == exp, "expected": exp, "got": got,
             "content_verdict": "CONTENT-MATCH" if got == exp else "ANOMALOUS"}
+
+
+_HEX64 = re.compile(r"^[0-9a-f]{64}$")
+_ALLOWED_MODULE_KEYS = {"guid", "type", "sha256", "is_code"}
+
+
+def validate_manifest(m: dict) -> Tuple[bool, List[str]]:
+    """Gate for crowdsourced submissions: confirm a manifest is well-formed AND
+    HASH-ONLY (no firmware code can ride in). Rejects disallowed module keys,
+    non-hex hashes, and suspiciously long strings (possible embedded data)."""
+    issues: List[str] = []
+    if m.get("spi_eyes_manifest") != MANIFEST_VERSION:
+        issues.append(f"spi_eyes_manifest must be {MANIFEST_VERSION!r}")
+    src = m.get("source") or {}
+    for k in ("vendor", "model", "version"):
+        if not src.get(k):
+            issues.append(f"source.{k} is required (provenance)")
+    if src.get("trust_tier") not in TRUST_TIERS:
+        issues.append(f"source.trust_tier must be one of {TRUST_TIERS}")
+
+    kind = m.get("kind", "modules")
+    if kind == "blob":
+        if not _HEX64.match(str(m.get("image_sha256", ""))):
+            issues.append("blob: image_sha256 must be 64 hex chars")
+    else:
+        mods = m.get("modules")
+        if not isinstance(mods, list):
+            issues.append("modules must be a list")
+        else:
+            for i, mod in enumerate(mods):
+                if not isinstance(mod, dict):
+                    issues.append(f"module[{i}] must be an object")
+                    continue
+                extra = set(mod) - _ALLOWED_MODULE_KEYS
+                if extra:
+                    issues.append(f"module[{i}] has disallowed keys {sorted(extra)} "
+                                  f"(HASH-ONLY: {sorted(_ALLOWED_MODULE_KEYS)})")
+                if not _HEX64.match(str(mod.get("sha256", ""))):
+                    issues.append(f"module[{i}].sha256 must be 64 hex chars")
+                for k, v in mod.items():
+                    if isinstance(v, str) and len(v) > 128:
+                        issues.append(f"module[{i}].{k} is suspiciously long "
+                                      f"(possible embedded data — submissions are hash-only)")
+    return (len(issues) == 0, issues)
 
 
 def save_manifest(m: dict, path: str) -> None:

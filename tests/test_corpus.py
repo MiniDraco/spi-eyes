@@ -3,6 +3,7 @@
 Builds tiny but real UEFI Firmware Volumes in-memory (proper FV + FFS headers) so
 the carver, manifest, and matcher are exercised end-to-end without external data.
 """
+import json
 import struct
 import sys
 import uuid
@@ -127,6 +128,25 @@ def test_corroborate_agree_and_disagree():
     assert not r2.agree
     assert any(d["guid"] == "22222222-2222-2222-2222-222222222222" for d in r2.disagreements)
     assert r2.manifest is None
+
+
+def test_validate_accepts_hash_only_rejects_embedded_code():
+    from corpus.manifest import build_manifest, validate_manifest
+    good = build_manifest(carve(fv([ffs(G1, T_DRIVER, b"aaa")])),
+                          source={"vendor": "V", "model": "M", "version": "1", "trust_tier": "vendor-signed"})
+    ok, issues = validate_manifest(good)
+    assert ok, issues
+    # someone tries to smuggle firmware bytes into a module entry -> rejected
+    bad = json.loads(json.dumps(good))
+    bad["modules"][0]["base64"] = "TVqQAAM..." + "A" * 200
+    ok2, issues2 = validate_manifest(bad)
+    assert not ok2
+    assert any("disallowed keys" in i or "embedded data" in i for i in issues2)
+    # missing provenance -> rejected
+    noprov = json.loads(json.dumps(good))
+    noprov["source"].pop("vendor")
+    ok3, issues3 = validate_manifest(noprov)
+    assert not ok3 and any("vendor" in i for i in issues3)
 
 
 def test_blob_manifest_for_opaque_chip_firmware():

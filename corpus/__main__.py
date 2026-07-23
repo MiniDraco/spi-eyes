@@ -121,6 +121,18 @@ def cmd_list(a) -> int:
     return 0
 
 
+def cmd_validate(a) -> int:
+    from .manifest import load_manifest, validate_manifest
+    ok, issues = validate_manifest(load_manifest(a.manifest))
+    if ok:
+        print(f"VALID: {a.manifest} is a well-formed, hash-only reference. Safe to submit.")
+        return 0
+    print(f"INVALID: {a.manifest}")
+    for i in issues:
+        print(f"  - {i}")
+    return 1
+
+
 def cmd_lvfs(a) -> int:
     from .lvfs import ingest_lvfs
     def _pr(r):
@@ -197,6 +209,9 @@ def main(argv) -> int:
     ck.set_defaults(func=cmd_check)
     ls = sub.add_parser("list", help="show corpus coverage")
     ls.set_defaults(func=cmd_list)
+    va = sub.add_parser("validate", help="check a submission is well-formed + hash-only")
+    va.add_argument("manifest")
+    va.set_defaults(func=cmd_validate)
     lv = sub.add_parser("lvfs", help="bulk-ingest vendor-signed references from LVFS")
     lv.add_argument("--limit", type=int, default=8, help="stop after N successful references")
     lv.add_argument("--max-attempts", dest="max_attempts", type=int, default=20)

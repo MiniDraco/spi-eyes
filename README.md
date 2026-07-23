@@ -6,6 +6,7 @@ verifier for commodity Windows PCs — a software realization of the NIST SP 800
 
 - Full design + threat model + adversarial review: [`WHITEPAPER.md`](WHITEPAPER.md)
 - Build roadmap for contributors / future sessions: [`PLAN.md`](PLAN.md)
+- **Contribute a firmware reference (crowdsource the corpus): [`SUBMIT.md`](SUBMIT.md)**
 - Red-team brief for other engines: [`ADVERSARIAL-PASS.md`](ADVERSARIAL-PASS.md)
 
 ## The one idea
