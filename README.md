@@ -50,6 +50,13 @@ deliverable is the *evidence ceiling + exposure report*, not a green light (WHIT
 `V ≤ max(Mᵢ)` → ceiling. New probes/adapters plug in without touching the core. See
 [`PLAN.md`](PLAN.md) for the phased path from here to earned-CLEAN.
 
+## Optional dependencies
+The core is zero-dependency (stdlib + PowerShell). Two optional enhancers:
+- **`biosutilities`** (`pip install biosutilities`) — unwraps vendor BIOS containers
+  (Dell PFS, AMI PFAT, Insyde) so the inner UEFI region carves per-module. Without it,
+  wrapped firmware degrades to a whole-image blob reference.
+- **`smartmontools`** — HPA/DCO + drive-firmware checks.
+
 ## Design tenets (enforced in code review)
 1. **Never collapse "couldn't check" into a negative.** Access-denied is NOT-ASSESSED, not
    "absent." (This was the first self-inflicted bug the probe caught — keep watching for it.)

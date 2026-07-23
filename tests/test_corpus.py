@@ -130,6 +130,13 @@ def test_corroborate_agree_and_disagree():
     assert r2.manifest is None
 
 
+def test_unwrap_is_optional_and_graceful():
+    from corpus.unwrap import available, unwrap
+    assert isinstance(available(), bool)          # optional dep; may or may not be present
+    # non-wrapped data must return None (no wrapper matched) and never raise
+    assert unwrap(b"this is not a firmware wrapper" * 100) is None
+
+
 def test_coproc_amd_psp_parse():
     import hashlib
     from corpus.coproc import parse_amd_psp

@@ -199,9 +199,20 @@ def match(target: CarveResult, manifest: dict) -> MatchResult:
 
 def build_image_manifest(data: bytes, source: Optional[dict] = None) -> dict:
     """Full manifest for a firmware image: UEFI per-module hashes PLUS the coprocessor
-    (Intel ME / AMD PSP) per-entry hashes carved from the same SPI image."""
+    (Intel ME / AMD PSP) per-entry hashes carved from the same SPI image. If the image
+    is a vendor wrapper (Dell PFS / AMI PFAT / Insyde) with no directly-visible FVs,
+    peel it first (optional biosutilities) so the inner BIOS carves per-module."""
     from .coproc import parse as parse_coproc
-    m = build_manifest(carve(data), source=source)
+    from .unwrap import unwrap
+    cr = carve(data)
+    if not any(f.is_code for f in cr.all_files):
+        peeled = unwrap(data)
+        if peeled:
+            data = peeled
+            cr = carve(peeled)
+            if isinstance(source, dict):
+                source = {**source, "unwrapped": True}
+    m = build_manifest(cr, source=source)
     co = parse_coproc(data)
     added = 0
     for e in co.entries:

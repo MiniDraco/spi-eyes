@@ -99,11 +99,11 @@ def _slug(s: str) -> str:
 
 def ingest_lvfs(limit: int = 8, max_attempts: int = 20, category: Optional[str] = None,
                 tier: str = "vendor-signed", refs_dir: str = DEFAULT_REFS_DIR,
-                skip_vendors=("dell",), delay: float = 1.5, on_result=None) -> List[dict]:
+                skip_vendors=(), delay: float = 1.5, on_result=None) -> List[dict]:
     """Ingest up to `limit` successful vendor-signed references from LVFS.
 
-    skip_vendors: vendor name substrings to skip WITHOUT downloading (e.g. Dell uses a
-    PFS wrapper our carver can't yet unwrap -- skipping avoids wasted CDN hits).
+    skip_vendors: vendor name substrings to skip WITHOUT downloading. (Dell PFS is now
+    unwrapped via biosutilities, so Dell is no longer skipped by default.)
     delay: seconds between downloads (politeness; the CDN 502s under rapid access).
     """
     import time
@@ -134,15 +134,12 @@ def ingest_lvfs(limit: int = 8, max_attempts: int = 20, category: Optional[str] 
             else:
                 src = {"vendor": e["vendor"], "model": e["model"], "version": e["version"],
                        "trust_tier": tier, "source": "LVFS", "source_url": e["url"],
-                       "component_type": e["category"],
+                       "component_type": e["category"], "region": "UEFI BIOS + ME/PSP coprocessor",
                        "image_sha256": hashlib.sha256(payload).hexdigest()}
-                cr = carve(payload)
-                code = [f for f in cr.all_files if f.is_code]
-                if code:                      # UEFI/BIOS -> fine-grained per-module (+ ME/PSP)
-                    src["region"] = "UEFI BIOS region + ME/PSP coprocessor"
-                    m = build_image_manifest(payload, source=src)
+                m = build_image_manifest(payload, source=src)   # carve + unwrap + coproc
+                if m["code_module_count"] > 0:                  # UEFI/BIOS -> per-module
                     kind, nmod = "modules", m["code_module_count"]
-                else:                         # opaque chip/device firmware -> whole-image blob
+                else:                                           # opaque chip fw -> whole-image blob
                     m = build_blob_manifest(payload, source=src, component_type=e["category"])
                     kind, nmod = "blob", 0
                 fn = f"{_slug(e['vendor'])}_{_slug(e['model'])}_{_slug(e['version'])}.json"
