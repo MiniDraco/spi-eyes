@@ -428,6 +428,18 @@ def _probe_hpa_dco() -> Evidence:
                     detail={"drives": findings})
 
 
+def probe_firmware_surface() -> List[Evidence]:
+    """Roll-call EVERY firmware-bearing chip; fail-closed completeness (no silent skips)."""
+    from .inventory import enumerate_components, summarize
+    comps = enumerate_components()
+    s = summarize(comps)
+    finding = (f"{s['total']} firmware-bearing chips enumerated: {s['ref_available']} reference-available, "
+               f"{s['cannot_verify']} CANNOT-VERIFY (blind) -- run `python -m capability_probe.inventory` for the roll")
+    return [Evidence("firmware_surface", Layer.INFECTION, finding,
+                     Verdict.CANNOT_VERIFY, Verdict.CANNOT_VERIFY, True, "PnP + host-store inventory",
+                     detail={"summary": s, "components": [c.__dict__ for c in comps]})]
+
+
 ALL_PROBES = [
     probe_machine_identity,
     probe_tpm,
@@ -436,6 +448,7 @@ ALL_PROBES = [
     probe_secure_boot,
     probe_driver_loadability,
     probe_byovd_drivers,
+    probe_firmware_surface,
     probe_option_rom_surface,
     probe_me_psp,
     probe_storage,

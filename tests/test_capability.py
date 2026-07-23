@@ -73,6 +73,21 @@ def test_ceiling_honest_when_tpm_unassessed():
     assert "undetermined" in c.scope.lower()
 
 
+def test_firmware_inventory_summarize_and_failclosed():
+    from capability_probe.inventory import Component, summarize
+    comps = [
+        Component("host UEFI", "BIOS", "SystemFirmware", "", "", "REF-AVAILABLE", "external read"),
+        Component("GPU VBIOS", "GPU", "Display", "", "", "CANNOT-VERIFY", "device-resident"),
+        Component("drive fw", "SSD", "Disk", "", "1.0", "CANNOT-VERIFY", "factory cmds"),
+    ]
+    s = summarize(comps)
+    assert s["total"] == 3
+    assert s["ref_available"] == 1
+    assert s["cannot_verify"] == 2          # blind chips are counted + surfaced, not dropped
+    # fail-closed: default coverage for an unknown chip must never be a clean/verified state
+    assert all(c.coverage in ("REF-AVAILABLE", "CANNOT-VERIFY", "OUT-OF-SCOPE") for c in comps)
+
+
 def _run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):
