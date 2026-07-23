@@ -98,19 +98,27 @@ def cmd_lookup(a) -> int:
 
 
 def cmd_check(a) -> int:
+    from . import client
     from .manifest import build_image_manifest, load_manifest, match_manifest
     idx = CorpusIndex()
     e = idx.lookup(a.vendor, a.model, a.version)
-    if not e:
+    ref = load_manifest(e.path) if e else None
+    where = "local corpus" if e else None
+    if ref is None:                              # local miss -> ask the server
+        ref = client.lookup(a.vendor, a.model, a.version)
+        where = f"server {client.base()}" if ref else None
+    if ref is None:
         print(f"no reference for EXACT version {a.vendor} {a.model} {a.version} "
-              f"(have: {idx.versions_for(a.vendor, a.model) or 'none'})")
+              f"(local: {idx.versions_for(a.vendor, a.model) or 'none'}; server: "
+              f"{client.versions(a.vendor, a.model) or 'unreachable/none'})")
         print("verdict: CANNOT-VERIFY (never matched against a different version).")
         return 0
     with open(a.image, "rb") as fh:
         data = fh.read()
     target = build_image_manifest(data)          # carve + unwrap + coproc
-    r = match_manifest(target, load_manifest(e.path))
-    print(f"checked vs {e.vendor} {e.model} {e.version} [{e.tier}] via {a.read} read")
+    r = match_manifest(target, ref)
+    tier = ref.get("source", {}).get("trust_tier", "unverified")
+    print(f"checked vs {a.vendor} {a.model} {a.version} [{tier}] from {where} via {a.read} read")
     print(f"  matched={r.matched}/{r.code_total_ref}  mismatch={len(r.mismatched)}  "
           f"missing={len(r.missing)}  extra={len(r.extra)}")
     for x in r.mismatched[:8]:
@@ -156,6 +164,37 @@ def cmd_validate(a) -> int:
     for i in issues:
         print(f"  - {i}")
     return 1
+
+
+def cmd_submit(a) -> int:
+    from . import client
+    from .manifest import load_manifest, validate_manifest
+    m = load_manifest(a.manifest)
+    ok, issues = validate_manifest(m)
+    if not ok:
+        print(f"NOT submitted -- local validation failed ({a.manifest}):")
+        for i in issues:
+            print(f"  - {i}")
+        return 1
+    r = client.submit(m)
+    print(f"server ({client.base()}) -> {r.get('status', '?')}"
+          + (f": {r['reason']}" if r.get("reason") else "")
+          + (f" (corroborations={r['corroborations']})" if r.get("corroborations") else ""))
+    return 0 if r.get("status") in ("accepted", "corroborated") else 1
+
+
+def cmd_pull(a) -> int:
+    from . import client
+    from .manifest import save_manifest
+    m = client.lookup(a.vendor, a.model, a.version)
+    if not m:
+        print(f"server has no reference for {a.vendor} {a.model} {a.version} "
+              f"(has: {client.versions(a.vendor, a.model) or 'none'})")
+        return 1
+    out = a.out or f"{a.vendor}_{a.model}_{a.version}.json".replace(" ", "-").lower()
+    save_manifest(m, out)
+    print(f"pulled {a.vendor} {a.model} {a.version} [{m.get('source', {}).get('trust_tier')}] -> {out}")
+    return 0
 
 
 def cmd_lvfs(a) -> int:
@@ -244,6 +283,14 @@ def main(argv) -> int:
     lv.add_argument("--limit", type=int, default=8, help="stop after N successful references")
     lv.add_argument("--max-attempts", dest="max_attempts", type=int, default=20)
     lv.set_defaults(func=cmd_lvfs)
+    sm = sub.add_parser("submit", help="submit a local manifest to the corpus server")
+    sm.add_argument("manifest")
+    sm.set_defaults(func=cmd_submit)
+    pl = sub.add_parser("pull", help="pull a reference from the corpus server")
+    for f in ("vendor", "model", "version"):
+        pl.add_argument("--" + f, required=True)
+    pl.add_argument("--out")
+    pl.set_defaults(func=cmd_pull)
     co = sub.add_parser("corroborate", help="cross-check the same version from >=2 sources")
     co.add_argument("images", nargs="+", help="the same (vendor,model,version) image from N sources")
     for f in ("vendor", "model", "version"):

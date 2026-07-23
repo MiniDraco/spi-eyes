@@ -12,6 +12,10 @@ FirmwareAttest-*.txt
 *.cap
 *.manifest.json
 
+# Generated server DB (references/ is the source of truth; DB is seeded from it)
+*.db
+server/corpus.db
+
 # Python
 __pycache__/
 *.py[cod]
