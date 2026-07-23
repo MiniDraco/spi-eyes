@@ -1,3 +1,11 @@
+# Reading firmware — safety note first
+
+**SPI-Eyes only ever READS firmware, never writes it.** Bricking comes from *writing* a bad
+image; a read cannot modify or damage firmware. No hardware? See **[software-read.md](software-read.md)**
+for a non-invasive Linux live-USB read (read-only, runs from RAM, installs nothing).
+
+---
+
 # External SPI read — the trustworthy read path (closes the loop)
 
 A software/internal read of the SPI flash can be lied to by a resident ring -2/-3
