@@ -23,10 +23,26 @@ A content match **never earns CLEAN on a blindable (software) read** — only wi
 trustworthy read (external SPI / DRTM). The manifest establishes *what should be there*;
 the read path establishes *whether you can believe what you measured*.
 
+## Version-exactness (why every version has its own entry)
+A machine is matched only against the reference for its **exact** `(vendor, model,
+version)`. Module sets differ per BIOS version (e.g. B450M DS3H: F30=458, F50=599,
+F60=410, F64=419 code modules) — matching the wrong version would flag every
+legitimately-changed module as an implant. If the exact version isn't covered, the
+verdict is **CANNOT-VERIFY** (submit that version's manifest), never a cross-version match.
+
+## Ingestion
+`python -m corpus ingest <update-url> --vendor V --model M --version X`. For Gigabyte,
+direct URLs follow `download.gigabyte.com/FileList/BIOS/mb_bios_<model>_<ver>.zip`
+(sometimes an `_n`/`_a` suffix) — enumerable by pattern (crawlers miss them; the site
+is JS-rendered). The image is fetched, carved, hashed, and discarded; only this manifest remains.
+
 ## Entries
 | File | Vendor | Model | Version | Tier | Code modules |
 |---|---|---|---|---|---|
+| `gigabyte_b450m-ds3h_f30.json` | Gigabyte | B450M DS3H | F30 | vendor-signed | 458 |
 | `gigabyte_b450m-ds3h_f50.json` | Gigabyte | B450M DS3H | F50 | vendor-signed | 599 |
+| `gigabyte_b450m-ds3h_f60.json` | Gigabyte | B450M DS3H | F60 | vendor-signed | 410 |
+| `gigabyte_b450m-ds3h_f64.json` | Gigabyte | B450M DS3H | F64 | vendor-signed | 419 |
 
-*(Minted from the official Gigabyte update; UEFI BIOS region only — AMD PSP + flash
+*(Minted from official Gigabyte updates; UEFI BIOS region only — AMD PSP + flash
 descriptor parsing is a pending unwrapper. Hash-only; contains no firmware code.)*
