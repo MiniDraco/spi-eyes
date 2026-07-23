@@ -15,7 +15,8 @@ from typing import List, Optional
 
 
 def base() -> str:
-    return os.environ.get("SPIEYES_SERVER", "http://127.0.0.1:8787").rstrip("/")
+    from . import config
+    return config.server_url()
 
 
 def _get(path: str, params: Optional[dict] = None, timeout: int = 10):

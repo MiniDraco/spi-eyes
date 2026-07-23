@@ -108,8 +108,13 @@ class App:
         for tag, col in VERDICT_COLOR.items():
             self.tree.tag_configure(tag, foreground=col)
 
-        self.status = tk.Label(self.root, text="ready", anchor="w", bg=C["panel"],
-                               fg=C["sub"], font=("Segoe UI", 9), padx=10, pady=4)
+        from corpus import config
+        srv = config.server_url()
+        cfg = config.config_path()
+        self.status = tk.Label(
+            self.root, anchor="w", bg=C["panel"], fg=C["sub"], font=("Segoe UI", 9),
+            padx=10, pady=4,
+            text=f"ready   |   corpus server: {srv}   ({'spi-eyes.ini' if cfg else 'built-in default'})")
         self.status.pack(fill="x", side="bottom")
 
     # ---- async plumbing ----------------------------------------------------------

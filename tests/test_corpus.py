@@ -202,6 +202,34 @@ def test_corroborated_tier_not_clean_capable():
     assert "multi-source-corroborated" not in CLEAN_CAPABLE_TIERS  # N sources may share a bad origin
 
 
+def test_config_server_resolution():
+    import os
+    import tempfile
+    from corpus import config
+    # env override wins
+    old = os.environ.get("SPIEYES_SERVER")
+    os.environ["SPIEYES_SERVER"] = "http://envwins:1"
+    try:
+        assert config.server_url() == "http://envwins:1"
+    finally:
+        os.environ.pop("SPIEYES_SERVER", None)
+        if old is not None:
+            os.environ["SPIEYES_SERVER"] = old
+    # spi-eyes.ini in cwd (simulates the file shipped next to the exe)
+    saved_env = os.environ.pop("SPIEYES_SERVER", None)
+    cwd = os.getcwd()
+    d = tempfile.mkdtemp()
+    try:
+        with open(os.path.join(d, "spi-eyes.ini"), "w", encoding="utf-8") as fh:
+            fh.write("[server]\nurl = http://iniwins:2\n")
+        os.chdir(d)
+        assert config.server_url() == "http://iniwins:2"
+    finally:
+        os.chdir(cwd)
+        if saved_env is not None:
+            os.environ["SPIEYES_SERVER"] = saved_env
+
+
 def _run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

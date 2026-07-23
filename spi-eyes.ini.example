@@ -1,0 +1,14 @@
+# SPI-Eyes configuration.
+#
+# Rename to  spi-eyes.ini  and ship it next to SPI-Eyes.exe to point clients at YOUR
+# corpus server. Precedence: SPIEYES_SERVER env var > this file > built-in default.
+#
+# A distributor can either drop this file beside the exe, or bake it into the exe at
+# build time (build-exe.ps1 bundles spi-eyes.ini if present).
+
+[server]
+url = http://127.0.0.1:8787
+
+[scan]
+# default read-source trust for `check` when unspecified: external | software
+# default_read = software
