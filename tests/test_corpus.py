@@ -93,6 +93,25 @@ def test_clean_capable_tier_flag():
     assert r2.clean_capable_tier is False       # consensus never earns CLEAN (R3)
 
 
+def test_corpus_index_is_version_exact():
+    import json
+    import os
+    import tempfile
+    from corpus.index import CorpusIndex
+    d = tempfile.mkdtemp()
+    for ver in ("F40", "F50"):
+        with open(os.path.join(d, f"g_{ver}.json"), "w", encoding="utf-8") as fh:
+            json.dump({"source": {"vendor": "Gigabyte", "model": "B450M DS3H",
+                                  "version": ver, "trust_tier": "vendor-signed"},
+                       "code_module_count": 10, "modules": []}, fh)
+    idx = CorpusIndex(d)
+    assert idx.lookup("gigabyte", "b450m ds3h", "f50") is not None       # normalized keys
+    assert idx.lookup("Gigabyte", "B450M DS3H", "F50") is not None
+    # an uncovered version must return None -- NEVER match against a different version
+    assert idx.lookup("Gigabyte", "B450M DS3H", "F42") is None
+    assert set(idx.versions_for("Gigabyte", "B450M DS3H")) == {"F40", "F50"}
+
+
 def _run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):
